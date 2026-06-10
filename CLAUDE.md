@@ -6,7 +6,35 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Status
 
-**Hi-fi 디자인 완료. 개발 준비 중.** 모든 화면 Hi-fi + 인터랙티브 프로토타입 완성. 도메인 모델 확정 후 개발 진입.
+**개발 진행 중.** Expo 프로젝트 셋업 완료. Supabase 스키마 적용 완료. UI 구현 중.
+
+---
+
+## Dev Progress
+
+### 완료
+- [x] Expo 프로젝트 초기화 (blank-typescript, expo-router)
+- [x] 핵심 패키지 설치 (expo-router, expo-location, expo-notifications, react-native-maps, supabase-js)
+- [x] app/ 라우트 구조 생성 (auth, tabs, 모달)
+- [x] Supabase 프로젝트 생성 (Seoul 리전)
+- [x] DB 스키마 마이그레이션 적용 (users, packs, triggers, items, notification_logs, check_logs + RLS)
+- [x] 도메인 모델 확정 (items.trigger_id 1:N)
+- [x] babel.config.js, babel-preset-expo, react-dom, react-native-web 설치
+- [x] app/index.tsx 루트 리다이렉트 (→ /(tabs)/bags)
+- [x] 웹 브라우저 실행 확인 (npm run web)
+
+### 진행 중
+- [x] 디자인 토큰 (src/theme.ts) — colors, radius, shadow, typography, spacing
+- [x] 내 가방 목록 화면 (mock data, src/components/BagCard + ItemChip)
+- [ ] 가방 상세 화면
+- [ ] 가방 생성 플로우
+- [ ] 체크리스트 화면
+
+### 대기
+- [ ] Auth (Google / 카카오 / Apple)
+- [ ] 위치 geofencing 로직
+- [ ] 푸시 알림 로직
+- [ ] 페이월 / RevenueCat
 
 ---
 
@@ -158,7 +186,7 @@ checked_at
 
 ## Handoff Files
 
-개발 시 디자인 참고 파일 위치: `handoff/amatda/project/`
+개발 시 디자인 참고 파일 위치: `.claude/handoff/project/`
 
 | 파일 | 내용 |
 |---|---|
@@ -273,7 +301,7 @@ Supabase는 50만 MAU 초과 시 MAU당 과금으로 ~$1,300/월까지 오름.
 - [x] ~~iOS 먼저 출시 vs 동시 출시~~ — iOS + Android 동시 출시
 - [x] ~~구독 가격~~ — 스탠다드 $1.99/월, 프로 $3.99/월, 연간 -35%
 - [x] ~~컬러 팔레트~~ — 모노 코랄 확정. 코랄(#e8674a) 단일색 + 명도 위계. 그린 폐기(지도 공원·물 초록만 예외). --good/--green-* 토큰은 코랄로 매핑
-- [ ] 도메인 모델: "내 챙길 것" 글로벌 풀 + 담기(M:N) vs items.trigger_id(1:N) — 와이어프레임은 전자, DB 설계는 후자로 충돌. **Hi-fi 완료 후 확정 예정 (의도적 연기)**
+- [x] ~~도메인 모델~~ — items.trigger_id(1:N) 확정. 트리거(떠날 때/도착할 때)에 아이템 직속 귀속, 트리거별 완전 독립 리스트. 별도 소지품 관리 페이지 없음, 가방 생성/편집 플로우에서만 추가.
 - [x] ~~도착할 때 UI 라벨~~ — "챙길 것" 통일
 - [x] ~~도착할 때 탭 아이콘~~ — flag 아이콘 확정 (hi-fi 적용 완료, 🛒 장바구니 폐기)
 - [x] ~~알림 탭 화면~~ — 출발 감지 푸시 + 체크리스트 C(위치 그리드) 확정
@@ -317,4 +345,4 @@ Supabase는 50만 MAU 초과 시 MAU당 과금으로 ~$1,300/월까지 오름.
 | 8 | 한글 타이포 | word-break:keep-all 전역 — 음절 중간 줄바꿈 방지, 단어 단위로만 끊김 |
 | 8 | 도착할 때 탭 아이콘 | flag 아이콘 확정 (🛒 장바구니 폐기) |
 | 8 | Hi-fi 1차 범위 | 내 가방 리스트+상세 → 가방 생성 → 체크리스트. 온보딩·설정·페이월은 2차 |
-| 8 | 도메인 모델 결정 연기 | 글로벌 풀(M:N) vs trigger 직속(1:N) 충돌 — Hi-fi 완료 후 UX 확정되면 정리 |
+| 9 | 도메인 모델 | items.trigger_id(1:N) 확정 — 트리거(떠날 때/도착할 때)에 직속. 별도 소지품 페이지 없음, 담기 시트의 "내 소지품" 목록은 유저의 기존 아이템 파생 뷰 |
