@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
 import { ItemChip } from './ItemChip';
 
@@ -15,6 +16,47 @@ type Props = {
   onToggle: (v: boolean) => void;
   onPress: () => void;
 };
+
+function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
+  return (
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      style={[toggleSt.track, value && toggleSt.trackOn]}
+    >
+      <View style={[toggleSt.thumb, value && toggleSt.thumbOn]} />
+    </Pressable>
+  );
+}
+
+const toggleSt = StyleSheet.create({
+  track: {
+    width: 46,
+    height: 27,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.lineStrong,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  trackOn: {
+    backgroundColor: colors.accent,
+    borderColor: colors.coral600,
+  },
+  thumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.lineStrong,
+    alignSelf: 'flex-start',
+  },
+  thumbOn: {
+    alignSelf: 'flex-end',
+    borderColor: colors.coral600,
+  },
+});
 
 export function BagCard({ name, emoji, items, triggerLabel, place, lastChecked, active, onToggle, onPress }: Props) {
   return (
@@ -37,13 +79,7 @@ export function BagCard({ name, emoji, items, triggerLabel, place, lastChecked, 
               </View>
             </View>
           </View>
-          <Switch
-            value={active}
-            onValueChange={onToggle}
-            trackColor={{ false: colors.line, true: colors.coral200 }}
-            thumbColor={active ? colors.accent : colors.surface}
-            ios_backgroundColor={colors.line}
-          />
+          <Toggle value={active} onValueChange={onToggle} />
         </View>
 
         {/* 챙길 것 스트립 */}
@@ -63,10 +99,16 @@ export function BagCard({ name, emoji, items, triggerLabel, place, lastChecked, 
         {/* 푸터 */}
         <View style={styles.divider} />
         <View style={styles.footer}>
-          <Text style={styles.place}>📍 {place ?? '위치 미설정'}</Text>
-          <Text style={[styles.lastChecked, active && styles.lastCheckedActive]}>
-            {active && '✓ '}{lastChecked ?? ''}
-          </Text>
+          <View style={styles.placeRow}>
+            <Ionicons name="location-outline" size={14} color={colors.accent} />
+            <Text style={styles.place}>{place ?? '위치 미설정'}</Text>
+          </View>
+          <View style={styles.lastCheckedRow}>
+            {active && <Ionicons name="checkmark" size={13} color={colors.accent} />}
+            <Text style={[styles.lastChecked, active && styles.lastCheckedActive]}>
+              {lastChecked ?? ''}
+            </Text>
+          </View>
         </View>
       </View>
     </Pressable>
@@ -172,10 +214,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  placeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   place: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.inkSoft,
+  },
+  lastCheckedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   lastChecked: {
     fontSize: 12,

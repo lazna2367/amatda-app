@@ -10,7 +10,7 @@ type Props = {
 export function ItemChip({ name, emoji, small }: Props) {
   return (
     <View style={[styles.chip, small && styles.chipSm]}>
-      <View style={styles.ico}>
+      <View style={[styles.ico, small && styles.icoSm]}>
         <Text style={[styles.icoText, small && styles.icoTextSm]}>{emoji}</Text>
       </View>
       <Text style={[styles.label, small && styles.labelSm]}>{name}</Text>

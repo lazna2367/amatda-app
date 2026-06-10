@@ -177,6 +177,49 @@ Claude Design에서 제작. `wireframe/` 폴더에 저장.
 
 ---
 
+## Phase 5 — 개발 구현 (진행 중)
+
+### 완료
+
+| 항목 | 파일 |
+|---|---|
+| Expo 프로젝트 초기화 (blank-typescript, expo-router) | — |
+| 핵심 패키지 설치 (expo-router, expo-location, expo-notifications, react-native-maps, supabase-js) | package.json |
+| app/ 라우트 구조 생성 (auth, tabs, 모달) | app/ |
+| Supabase 프로젝트 생성 (Seoul 리전) + DB 스키마 마이그레이션 (+ RLS) | supabase/migrations/ |
+| 루트 리다이렉트 | app/index.tsx |
+| 디자인 토큰 | src/theme.ts |
+| 가방 목록 화면 (mock data, BagCard + ItemChip 컴포넌트) | app/(tabs)/bags/index.tsx |
+| 가방 상세 화면 (지도 카드, 트리거 세그먼트, 챙길 것 칩 그리드, 케밥 메뉴) | app/(tabs)/bags/[id].tsx |
+| 가방 생성 화면 (이모지 추천, 빈 지도 카드, 담기 바텀시트) | app/(tabs)/bags/new.tsx |
+| 위치 설정 화면 (전체화면 데코 지도, 반경 슬라이더) | app/(tabs)/bags/location.tsx |
+
+| 체크리스트 화면 (2열 그리드, 진행 바, 전부완료 버튼, CTA) | app/checklist.tsx |
+| 알림 탭 화면 (감지 상태 카드, 체험 카드, 기록 리스트) | app/(tabs)/notifications/index.tsx |
+
+| 페이월 화면 (미니 가방 카드, 진입경로 2종, 플랜 요약) | app/paywall.tsx |
+| 플랜 선택 화면 (월간/연간 토글, 스탠다드/프로 카드) | app/plans.tsx |
+
+| 설정 탭 (프로필 카드, 권한 상태, 구독, 계정 섹션) | app/(tabs)/settings/index.tsx |
+
+| 온보딩 3스텝 (스티커 아트, 도트 인디케이터, step 전환) | app/(auth)/onboarding.tsx |
+| 소셜 로그인 (카카오·Google·Apple) | app/(auth)/login.tsx |
+| 위치 권한 요청 | app/(auth)/perm-location.tsx |
+| 알림 권한 요청 | app/(auth)/perm-noti.tsx |
+
+### 진행 중
+- UI 1차 완료. 기능 연동 단계 대기.
+
+### 대기
+
+- [ ] Auth (Google / 카카오 / Apple)
+- [ ] 위치 geofencing 로직 (expo-location)
+- [ ] 푸시 알림 로직 (expo-notifications)
+- [ ] 페이월 화면 + RevenueCat 연동
+- [ ] Supabase 실데이터 연동 (현재 mock data)
+
+---
+
 ## 마이그레이션 플랜 (50만 MAU 도달 시)
 
 Supabase 50만 MAU 초과 시 ~$1,300/월 → 그 시점 구독 수익 월 $25,000+ 예상.

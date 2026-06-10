@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { BagCard, type BagItem } from '@/components/BagCard';
@@ -32,21 +32,6 @@ const MOCK_BAGS: Bag[] = [
       { id: '4', name: '사원증', emoji: '🪪' },
       { id: '5', name: '이어폰', emoji: '🎧' },
       { id: '6', name: '우산', emoji: '☂️' },
-    ],
-  },
-  {
-    id: '2',
-    name: '헬스장',
-    emoji: '🏋️',
-    triggerLabel: '떠날 때',
-    place: '집 · 합정동',
-    lastChecked: '3일 전',
-    active: false,
-    items: [
-      { id: '7', name: '운동복', emoji: '👕' },
-      { id: '8', name: '수건', emoji: '🧺' },
-      { id: '9', name: '이어폰', emoji: '🎧' },
-      { id: '10', name: '셰이커', emoji: '🥤' },
     ],
   },
 ];
@@ -164,7 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.screenH,
-    paddingTop: 56,
+    paddingTop: Platform.OS === 'web' ? 16 : 56,
     paddingBottom: 12,
   },
   brandTitle: {
@@ -241,14 +226,15 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   addCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 8,
     paddingVertical: 15,
     borderWidth: 1.5,
     borderColor: colors.lineStrong,
     borderStyle: 'dashed',
-    borderRadius: 18,
+    ...radiusExact.card,
     backgroundColor: 'transparent',
   },
   addCardIcon: {

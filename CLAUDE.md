@@ -26,15 +26,29 @@ This file provides guidance to Claude Code when working with code in this reposi
 ### 진행 중
 - [x] 디자인 토큰 (src/theme.ts) — colors, radius, shadow, typography, spacing
 - [x] 내 가방 목록 화면 (mock data, src/components/BagCard + ItemChip)
-- [ ] 가방 상세 화면
-- [ ] 가방 생성 플로우
-- [ ] 체크리스트 화면
+- [x] 가방 상세 화면 (app/(tabs)/bags/[id].tsx — 지도 카드, 트리거 세그먼트, 챙길 것 칩 그리드, 케밥 메뉴)
+- [x] 가방 생성 플로우 (app/(tabs)/bags/new.tsx — 이모지 추천, 빈 지도 카드, 담기 바텀시트 / location.tsx — 전체화면 지도, 반경 슬라이더)
+- [x] 체크리스트 화면 (app/checklist.tsx — 2열 그리드, 진행 바, 전부완료 버튼, CTA)
+- [x] 알림 탭 화면 (app/(tabs)/notifications/index.tsx — 감지 상태 카드, 체험 카드, 기록 리스트)
+
+- [x] 페이월 화면 (app/paywall.tsx — 미니 가방 카드, 진입경로 2종, 플랜 요약)
+- [x] 플랜 선택 화면 (app/plans.tsx — 월간/연간 토글, 스탠다드/프로 카드)
+
+- [x] 설정 탭 (app/(tabs)/settings/index.tsx — 프로필 카드, 권한, 구독, 계정 섹션)
+
+- [x] 온보딩 3스텝 (app/(auth)/onboarding.tsx — step 상태, 스티커 아트, 도트 인디케이터)
+- [x] 소셜 로그인 (app/(auth)/login.tsx — 카카오/Google/Apple)
+- [x] 권한 요청 (app/(auth)/perm-location.tsx, perm-noti.tsx)
+
+### 진행 중
+- (UI 1차 완료. 기능 연동 대기)
 
 ### 대기
 - [ ] Auth (Google / 카카오 / Apple)
 - [ ] 위치 geofencing 로직
 - [ ] 푸시 알림 로직
-- [ ] 페이월 / RevenueCat
+- [ ] RevenueCat 연동
+- [ ] Supabase 실데이터 연동
 
 ---
 
@@ -44,6 +58,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 - **자동 git commit / push 금지**: 히스토리를 만들거나 바꾸는 모든 git 명령은 사용자의 명시적 요청이 있을 때만 실행.
 - **커밋 메시지에 Co-Authored-By 트레일러 금지**.
 - **안건/이슈 물어보면 답변부터, 코드 수정 금지**: 의견·판단을 구하면 분석/제안만 답하고, 명시적 진행 신호 후에 코드 수정.
+- **진행상황 기록**: 작업 완료 시마다 CLAUDE.md Dev Progress와 PROGRESS.md Phase 5 모두 업데이트.
+- **커밋 메시지 한글 작성**: 모든 커밋 메시지는 한글로 작성.
 
 ---
 
