@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>아맞다 — 디자인 시스템</title>
+<style>
+  html, body { margin: 0; background: #e9e6df; }
+  #ds { font-family: 'Pretendard Variable', sans-serif; color: #2c2a26; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 40px 96px; }
+  .ds-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:8px; flex-wrap:wrap; }
+  .ds-head > div:first-child { flex:none; }
+  .ds-kicker { font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#e8674a; }
+  .ds-h1 { font-size:44px; font-weight:800; letter-spacing:-.03em; margin:6px 0 0; white-space:nowrap; }
+  .ds-sub { font-size:15px; color:#6f6b62; max-width:380px; line-height:1.6; }
+  .sec { margin-top:52px; }
+  .sec-t { display:flex; align-items:baseline; gap:12px; margin-bottom:18px; padding-bottom:12px; border-bottom:1.5px solid #d8d3c7; }
+  .sec-n { font-size:12px; font-weight:800; color:#a6a092; letter-spacing:.1em; }
+  .sec-h { font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .sec-d { font-size:13px; color:#6f6b62; margin-left:auto; }
+  .panel { background:#fffefb; border:1.5px solid #e0dbcf; border-radius:18px; padding:26px; box-shadow:0 8px 24px -18px rgba(44,42,38,.5); }
+  .grid { display:grid; gap:16px; }
+  .label-s { font-size:11px; font-weight:700; color:#8a857a; letter-spacing:.04em; text-transform:uppercase; margin-bottom:12px; }
+  .mono { font-family:'Pretendard Variable',monospace; font-size:11px; color:#8a857a; letter-spacing:.02em; }
+
+  /* swatches */
+  .ramp { display:flex; border-radius:13px; overflow:hidden; border:1.5px solid #e0dbcf; }
+  .ramp .sw { flex:1; height:74px; display:flex; align-items:flex-end; padding:7px 8px; }
+  .ramp .sw span { font-size:9.5px; font-weight:700; letter-spacing:.02em; }
+  .tok { display:flex; align-items:center; gap:12px; }
+  .tok .chip { width:38px; height:38px; border-radius:11px; border:1.5px solid rgba(44,42,38,.12); flex:none; }
+  .tok .nm { font-size:13px; font-weight:700; }
+  .tok .hex { font-size:11px; color:#8a857a; }
+
+  .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .stack { display:flex; flex-direction:column; gap:14px; }
+  .demo { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .demo-cell { display:flex; flex-direction:column; gap:9px; align-items:flex-start; }
+  .pick { position:relative; }
+  .pick.win:after { content:'후보'; position:absolute; top:-9px; right:-9px; background:#e8674a; color:#fff; font-size:9px; font-weight:800; padding:2px 7px; border-radius:8px; border:1.5px solid #2c2a26; }
+  .sec-h { white-space:nowrap; }
+  .wordmark { white-space:nowrap; }
+</style>
+</head>
+<body>
+<div id="ds"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="hifi-ui.jsx"></script>
+
+<script type="text/babel">
+const { I, Btn, Sticker, Toggle, Pill, Note, Hr } = window;
+
+function Section({ n, h, d, children }) {
+  return (
+    <div className="sec">
+      <div className="sec-t">
+        <span className="sec-n">{n}</span>
+        <span className="sec-h">{h}</span>
+        {d && <span className="sec-d">{d}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+function Ramp({ name, stops }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div className="label-s">{name}</div>
+      <div className="ramp">
+        {stops.map(([k, c, dark]) => (
+          <div key={k} className="sw" style={{ background: c }}>
+            <span style={{ color: dark ? '#fff' : '#2c2a26' }}>{k}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function Tok({ c, nm, hex }) {
+  return (
+    <div className="tok">
+      <span className="chip" style={{ background: c }}></span>
+      <div><div className="nm">{nm}</div><div className="hex">{hex}</div></div>
+    </div>
+  );
+}
+function TypeRow({ size, weight, ls, label, sample }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, padding: '12px 0', borderBottom: '1.5px solid #f0ece2' }}>
+      <div style={{ width: 150, flex: 'none' }}>
+        <div style={{ fontSize: 12, fontWeight: 700 }}>{label}</div>
+        <div className="mono">{size}px · {weight}{ls ? ' · ' + ls : ''}</div>
+      </div>
+      <div style={{ fontSize: size, fontWeight: weight, letterSpacing: ls || 'normal', lineHeight: 1.2 }}>{sample}</div>
+    </div>
+  );
+}
+
+function DS() {
+  return (
+    <div className="wrap">
+      <div className="ds-head">
+        <div>
+          <div className="ds-kicker">amatda · design system</div>
+          <h1 className="ds-h1">아맞다 디자인 시스템</h1>
+        </div>
+        <p className="ds-sub">"폴리싱된 스티커 노트 앱" — Pretendard 본문에 스티커·코랄·마커노랑으로 손맛을 남긴 위치 리마인더 앱의 비주얼 언어.</p>
+      </div>
+
+      {/* ---------- BRAND ---------- */}
+      <Section n="00" h="브랜드 워드마크" d="디스플레이 폰트 후보 — 골라주세요">
+        <div className="panel demo" style={{ gap: 40 }}>
+          <div className="demo-cell pick">
+            <div className="label-s">A · Pretendard 800 (클린)</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="wordmark">
+              <span style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-.04em' }}>아맞다</span>
+              <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#e8674a', marginTop: 14 }}></span>
+            </div>
+            <div className="mono">시스템과 한 몸 · 가장 정돈됨</div>
+          </div>
+          <div className="demo-cell pick win">
+            <div className="label-s">B · Gaegu 손글씨 (캐릭터)</div>
+            <span className="wordmark" style={{ fontFamily: 'Gaegu, sans-serif', fontSize: 44, fontWeight: 700 }}>아맞다</span>
+            <div className="mono">'아 맞다!' 감탄사 느낌 살림 · 로고에만</div>
+          </div>
+          <div className="demo-cell">
+            <div className="label-s">슬로건</div>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#6f6b62' }}>빠뜨린 거 없죠?</span>
+          </div>
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12.5, color: '#6f6b62' }}>※ 본문·UI는 전부 Pretendard. 손글씨는 로고/스플래시 등 브랜드 표기에만 한정 사용.</div>
+      </Section>
+
+      {/* ---------- COLOR ---------- */}
+      <Section n="01" h="컬러 — 모노 코랄" d="단색 + 명도 위계 · 충돌 없음">
+        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="panel">
+            <Ramp name="Coral — 브랜드 · 액션 · 상태 (단일 색상)" stops={[['50','#fdeee9'],['100','#fbe0d7'],['200','#f6c5b5'],['300','#f0a088'],['400','#ec7e5e'],['500','#e8674a',1],['600','#d24e2f',1],['700','#ad3c21',1]]}/>
+            <Ramp name="Marker — 선택된 스티커 / 하이라이트" stops={[['soft','#fff4d2'],['base','#ffe7a0'],['edge','#f0cf7e']]}/>
+          </div>
+          <div className="panel">
+            <div className="label-s">중립 — 따뜻한 종이톤</div>
+            <div className="stack" style={{ gap: 11, marginBottom: 18 }}>
+              <Tok c="#f4f1ea" nm="paper — 앱 배경" hex="#f4f1ea"/>
+              <Tok c="#fffefb" nm="surface — 카드" hex="#fffefb"/>
+              <Tok c="#2c2a26" nm="ink — 본문" hex="#2c2a26"/>
+              <Tok c="#6f6b62" nm="ink-soft — 보조" hex="#6f6b62"/>
+              <Tok c="#a6a092" nm="ink-faint — 플레이스홀더" hex="#a6a092"/>
+              <Tok c="#e6e1d5" nm="line — 테두리" hex="#e6e1d5"/>
+            </div>
+            <div className="label-s">시맨틱 사용 규칙</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.7, color: '#4a463f' }}>
+              · <b style={{ color: '#e8674a' }}>코랄 (솔리드)</b> = 누르는 것 — 버튼·CTA·선택·＋·브랜드<br/>
+              · <b style={{ color: '#c1421f', background: '#fdeee9', padding: '0 4px', borderRadius: 3 }}>코랄 (틴트)</b> = 상태 — 감지 중·토글 ON·완료·진행바 (점·작게)<br/>
+              · <b style={{ background: '#ffe7a0', padding: '0 3px', borderRadius: 3 }}>마커</b> = 이모지 타일·하이라이트 배경
+            </div>
+            <div style={{ fontSize: 11.5, lineHeight: 1.6, color: '#8a857a', marginTop: 10 }}>※ 한 색(코랄)으로 통일 — 누르는 것은 솔리드, 상태는 옅은 틴트로 명도 위계만 줌. 색 충돌이 구조적으로 없음. (지도 안 공원·물의 초록은 실제 지도 표현이라 예외)</div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------- TYPE ---------- */}
+      <Section n="02" h="타이포그래피" d="Pretendard Variable">
+        <div className="panel">
+          <TypeRow label="Display" size={28} weight={800} ls="-.02em" sample="빠뜨린 거 없죠?"/>
+          <TypeRow label="Title" size={23} weight={800} ls="-.02em" sample="출근 가방"/>
+          <TypeRow label="Heading" size={17} weight={700} sample="떠날 때 챙길 것"/>
+          <TypeRow label="Body" size={15} weight={500} sample="집에서 200m 멀어지면 알림을 보내요"/>
+          <TypeRow label="Label" size={13} weight={700} sample="가방 이름"/>
+          <TypeRow label="Caption" size={12} weight={500} sample="가방 2개 · 1개 켜짐"/>
+        </div>
+      </Section>
+
+      {/* ---------- SHAPE ---------- */}
+      <Section n="03" h="형태 — radius · 그림자" d="비대칭 radius + flat offset = 스티커 DNA">
+        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="panel">
+            <div className="label-s">비대칭 Radius</div>
+            <div className="demo">
+              {[['card','18 16 19 16','18px 16px 19px 16px'],['button','14 12 15 13','14px 12px 15px 13px'],['chip','13 11 13 10','13px 11px 13px 10px'],['tile','12 11 13 10','12px 11px 13px 10px']].map(([nm,lbl,r]) => (
+                <div key={nm} className="demo-cell">
+                  <div style={{ width: 76, height: 56, background: '#faf8f2', border: '1.5px solid #2c2a26', borderRadius: r }}></div>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>{nm}</div>
+                  <div className="mono">{lbl}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="panel">
+            <div className="label-s">Flat offset + soft ambient</div>
+            <div className="demo">
+              <div className="demo-cell">
+                <div style={{ width: 100, height: 60, background: '#fffefb', border: '1.5px solid #e6e1d5', borderRadius: '14px', boxShadow: '2px 3px 0 rgba(44,42,38,.045), 0 8px 20px -14px rgba(44,42,38,.4)' }}></div>
+                <div className="mono">card</div>
+              </div>
+              <div className="demo-cell">
+                <div style={{ width: 100, height: 60, background: '#e8674a', border: '1.5px solid #d24e2f', borderRadius: '14px', boxShadow: '3px 3px 0 rgba(207,73,42,.28)' }}></div>
+                <div className="mono">primary btn</div>
+              </div>
+              <div className="demo-cell">
+                <div style={{ width: 64, height: 30, background: '#fffefb', border: '1.5px solid #2c2a26', borderRadius: '13px 11px 13px 10px', boxShadow: '1.5px 2.5px 0 rgba(44,42,38,.12)' }}></div>
+                <div className="mono">sticker</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------- COMPONENTS ---------- */}
+      <Section n="04" h="컴포넌트" d="hifi-ui.jsx export">
+        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="panel">
+            <div className="label-s">스티커 칩 (시그니처)</div>
+            <div className="row" style={{ marginBottom: 22 }}>
+              <Sticker label="휴대폰" peel/>
+              <Sticker label="지갑"/>
+              <Sticker label="차 키" sel badge/>
+              <Sticker label="텀블러" sel badge neu/>
+              <Sticker label="챙길 것 담기" dash icon={<I.plus/>}/>
+            </div>
+            <div className="label-s">버튼</div>
+            <div className="stack" style={{ alignItems: 'stretch', maxWidth: 280 }}>
+              <Btn pri full>지금 감지 시작</Btn>
+              <div className="row">
+                <Btn good>다 챙김</Btn>
+                <Btn>스탠다드</Btn>
+                <Btn disabled>비활성</Btn>
+              </div>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="label-s">토글 · 세그먼트 · 필</div>
+            <div className="row" style={{ marginBottom: 18 }}>
+              <Toggle on/><Toggle/>
+              <Pill live><span className="dot"></span>감지 중</Pill>
+              <Pill on>프로</Pill>
+              <Pill>거부됨</Pill>
+            </div>
+            <div className="seg hf" style={{ maxWidth: 300, marginBottom: 18 }}>
+              <div className="s on"><I.exit/> 떠날 때</div>
+              <div className="s"><I.flag/> 도착할 때</div>
+            </div>
+            <Note>빈/미설정 상태 · 도움말 주석에 쓰는 노트 박스</Note>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------- MAP + ICONS ---------- */}
+      <Section n="05" h="지도 · 아이콘 변형" d="도착 트리거 아이콘 — 골라주세요">
+        <div className="grid" style={{ gridTemplateColumns: '1.1fr 1fr' }}>
+          <div className="panel">
+            <div className="label-s">지도 카드 (종이격자는 여기에만)</div>
+            <div className="hf">
+              <div className="map" style={{ height: 168, borderRadius: '18px 16px 19px 16px', border: '1.5px solid #2c2a26' }}>
+                <div className="map-road" style={{ left: 0, right: 0, top: '54%', height: 10 }}></div>
+                <div className="map-road" style={{ top: 0, bottom: 0, left: '38%', width: 9 }}></div>
+                <div className="geo" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 104, height: 104 }}></div>
+                <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-100%)', color: '#e8674a' }}><I.pinFill/></div>
+                <span className="stk" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,8px)', fontSize: 12, padding: '4px 9px' }}>우리집</span>
+              </div>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="label-s">"도착할 때" 아이콘 후보</div>
+            <div className="demo">
+              {[['flag', I.flag, '깃발 · 도착지점', true],['enter', I.enter, '진입 화살표', false],['basket', I.basket, '장바구니', false],['pin', I.pin, '핀 도착', false]].map(([k, Ico, lbl, win]) => (
+                <div key={k} className={'demo-cell pick' + (win ? ' win' : '')} style={{ alignItems: 'center' }}>
+                  <div className="center hf" style={{ width: 52, height: 52, borderRadius: 13, border: '1.5px solid #2c2a26', background: '#fffefb', color: '#2c2a26' }}><Ico/></div>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>{lbl}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, fontSize: 12, color: '#6f6b62', lineHeight: 1.6 }}>장바구니는 '살 것'만 연상 → 도착=할 것(수령·구매 포괄)엔 <b>깃발</b>이 더 중립적이라 후보로 제안.</div>
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('ds')).render(<DS/>);
+</script>
+</body>
+</html>

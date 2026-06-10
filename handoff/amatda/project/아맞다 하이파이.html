@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>아맞다 — 하이파이</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="hifi-ui.jsx"></script>
+<script type="text/babel" src="hifi-home.jsx"></script>
+<script type="text/babel" src="hifi-items.jsx"></script>
+<script type="text/babel" src="hifi-create.jsx"></script>
+<script type="text/babel" src="hifi-checklist.jsx"></script>
+<script type="text/babel" src="hifi-entry.jsx"></script>
+<script type="text/babel" src="hifi-more.jsx"></script>
+
+<script type="text/babel">
+const AW = 372, AH = 768;
+const board = (id, label, Comp) => (
+  <DCArtboard key={id} id={id} label={label} width={AW} height={AH}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0eee9' }}>
+      <Comp/>
+    </div>
+  </DCArtboard>
+);
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="home" title="① 내 가방 — 리스트" subtitle="홈 탭 첫 화면 · 행 탭 → 가방 상세 · 토글로 감지 켜고 끄기">
+        {board('list', '내 가방 (기본)', HomeList)}
+        {board('empty', '빈 상태 · 첫 실행', HomeEmpty)}
+        {board('perm', '위치 권한 거부 · 감지 멈춤', HomePermBlocked)}
+      </DCSection>
+
+      <DCSection id="detail" title="① 가방 상세" subtitle="지도 → 트리거 세그먼트 → 챙길 것 그리드 · 즉시 저장">
+        {board('depart', '떠날 때 탭', BagDepart)}
+        {board('arrive', '도착할 때 탭 (할 것)', BagArrive)}
+        {board('menu', '⋯ 가방 메뉴', BagMenu)}
+      </DCSection>
+
+      <DCSection id="add" title="② 챙길 것 — 편집 · 담기 플로우" subtitle="⋯ 메뉴 → 편집 시트 / 담기 피커 → 새 소지품 인라인 생성 → NEW로 선택된 채 등장">
+        {board('itemMenu', '챙길 것 ⋯ 메뉴', ItemActionMenu)}
+        {board('itemEdit', '챙길 것 편집 시트', ItemEditSheet)}
+        {board('addPick', '담기 · 내 소지품 다중선택', ItemAddPicker)}
+        {board('addNew', '담기 · 새 소지품 인라인 생성', ItemAddCreate)}
+        {board('addDone', '담기 · 추가 직후 (NEW)', ItemAddCreated)}
+      </DCSection>
+
+      <DCSection id="create" title="③ 가방 만들기 + 위치 설정" subtitle="빈 가방 → 이름 입력하면 '추천 이모지'로 전환 → 지도 탭 → 핀·반경 설정">
+        {board('cEmpty', '새 가방 · 빈 상태', BagCreateEmpty)}
+        {board('cName', '이름 입력 → 이모지 추천', BagCreateName)}
+        {board('cLoc', '위치 설정 (핀 + 반경)', LocationSet)}
+      </DCSection>
+
+      <DCSection id="noti" title="④ 알림 — 출발 푸시 + 체크리스트" subtitle="잠금화면 푸시(다 챙김/열기) → 위치 그리드 체크리스트 → 전체 완료 시 CTA 활성">
+        {board('push', '잠금화면 출발 푸시', PushLock)}
+        {board('check', '체크리스트 · 진행 중', Checklist)}
+        {board('checkDone', '체크리스트 · 전체 완료', ChecklistDone)}
+      </DCSection>
+
+      <DCSection id="entry" title="⑤ 진입 — 온보딩 · 로그인 · 권한" subtitle="최초 실행 온보딩 3스텝 → 소셜 로그인 → 위치·알림 권한">
+        {board('ob1', '온보딩 1', Onboard1)}
+        {board('ob2', '온보딩 2', Onboard2)}
+        {board('ob3', '온보딩 3', Onboard3)}
+        {board('login', '소셜 로그인', Login)}
+        {board('permLoc', '위치 권한', PermLocation)}
+        {board('permNoti', '알림 권한', PermNoti)}
+      </DCSection>
+
+      <DCSection id="pay" title="⑥ 페이월 + 플랜 + 설정" subtitle="A안(투자심리) · 진입 경로 2종 분기 → 플랜 선택 → 설정">
+        {board('payFilled', '페이월 · 2개 꽉 참', PaywallFilled)}
+        {board('payOther', '페이월 · 다른 진입', PaywallOther)}
+        {board('plans', '플랜 선택', Plans)}
+        {board('settings', '설정', Settings)}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
