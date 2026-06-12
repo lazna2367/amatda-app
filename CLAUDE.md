@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Status
 
-**개발 진행 중.** Expo 프로젝트 셋업 완료. Supabase 스키마 적용 완료. UI 구현 중.
+**기능 연동 중.** UI 1차 완료. Auth·실데이터·Geofencing·알림 연동 완료. 남은 작업: location.tsx 실지도, 챙길 것 담기/삭제, RevenueCat, 빌드.
 
 ---
 
@@ -39,16 +39,22 @@ This file provides guidance to Claude Code when working with code in this reposi
 - [x] 온보딩 3스텝 (app/(auth)/onboarding.tsx — step 상태, 스티커 아트, 도트 인디케이터)
 - [x] 소셜 로그인 (app/(auth)/login.tsx — 카카오/Google/Apple)
 - [x] 권한 요청 (app/(auth)/perm-location.tsx, perm-noti.tsx)
+- [x] 커스텀 AlertModal (src/components/AlertModal.tsx — 전역 상태, 하이파이 디자인, 웹 호환)
+- [x] 로그아웃 연동 (설정 탭 → AlertModal 확인 → supabase.auth.signOut)
+- [x] 가방 상세 실데이터 연동 (app/(tabs)/bags/[id].tsx — Supabase 쿼리, 로딩 상태)
+- [x] 케밥 메뉴 연동 (이름·이모지 변경 RenameModal, 가방 삭제 AlertModal + Supabase delete)
 
 ### 진행 중
-- (UI 1차 완료. 기능 연동 대기)
+- (기능 연동 중)
 
 ### 대기
-- [ ] Auth (Google / 카카오 / Apple)
-- [ ] 위치 geofencing 로직
-- [ ] 푸시 알림 로직
+- [x] Auth — Google OAuth 연동 완료. 카카오는 Supabase 서버가 account_email 스코프 강제 포함으로 웹 KOE205 발생, 비즈니스 인증 후 해결 예정. Apple 대기.
+- [x] 로그인 상태 유지 (세션 퍼시스트 확인)
+- [x] 로그아웃 (설정 탭 연동)
+- [x] Supabase 실데이터 연동 (가방 목록, 가방 생성, 가방 상세, 케밥 액션)
+- [x] 위치 geofencing 로직 (src/lib/geofencing.ts — TaskManager 백그라운드 태스크, syncGeofencing, AsyncStorage 메타 저장)
+- [x] 푸시 알림 설정 (src/lib/notifications.ts — 핸들러, Android 채널, 권한 요청)
 - [ ] RevenueCat 연동
-- [ ] Supabase 실데이터 연동
 
 ---
 
@@ -58,8 +64,9 @@ This file provides guidance to Claude Code when working with code in this reposi
 - **자동 git commit / push 금지**: 히스토리를 만들거나 바꾸는 모든 git 명령은 사용자의 명시적 요청이 있을 때만 실행.
 - **커밋 메시지에 Co-Authored-By 트레일러 금지**.
 - **안건/이슈 물어보면 답변부터, 코드 수정 금지**: 의견·판단을 구하면 분석/제안만 답하고, 명시적 진행 신호 후에 코드 수정.
-- **진행상황 기록**: 작업 완료 시마다 CLAUDE.md Dev Progress와 PROGRESS.md Phase 5 모두 업데이트.
+- **진행상황 기록**: 작업 완료 시마다 CLAUDE.md Dev Progress 업데이트.
 - **커밋 메시지 한글 작성**: 모든 커밋 메시지는 한글로 작성.
+- **AGENTS.md 동기화**: Working Rules 변경 시 AGENTS.md에도 동일하게 반영. 두 파일의 규칙은 항상 일치해야 함.
 
 ---
 
@@ -71,7 +78,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - **Type**: 위치 기반 리마인더 앱
 - **운영 우산**: Surmise Lab (서마이즈랩)
 - **타겟**: 남녀노소, 알람 앱처럼 범용
-- **플랫폼**: iOS + Android (React Native + Expo)
+- **플랫폼**: Android MVP 출시 → 추후 iOS 출시 (React Native + Expo)
 
 ---
 
@@ -314,7 +321,7 @@ Supabase는 50만 MAU 초과 시 MAU당 과금으로 ~$1,300/월까지 오름.
 - [x] ~~슬로건~~ — "빠뜨린 거 없죠?"
 - [x] ~~폰트~~ — Pretendard Variable
 - [x] ~~다크모드 지원 여부~~ — 라이트 모드 단일 (v2 검토)
-- [x] ~~iOS 먼저 출시 vs 동시 출시~~ — iOS + Android 동시 출시
+- [x] ~~iOS 먼저 출시 vs 동시 출시~~ — Android MVP 먼저, 추후 iOS 출시
 - [x] ~~구독 가격~~ — 스탠다드 $1.99/월, 프로 $3.99/월, 연간 -35%
 - [x] ~~컬러 팔레트~~ — 모노 코랄 확정. 코랄(#e8674a) 단일색 + 명도 위계. 그린 폐기(지도 공원·물 초록만 예외). --good/--green-* 토큰은 코랄로 매핑
 - [x] ~~도메인 모델~~ — items.trigger_id(1:N) 확정. 트리거(떠날 때/도착할 때)에 아이템 직속 귀속, 트리거별 완전 독립 리스트. 별도 소지품 관리 페이지 없음, 가방 생성/편집 플로우에서만 추가.
@@ -339,7 +346,7 @@ Supabase는 50만 MAU 초과 시 MAU당 과금으로 ~$1,300/월까지 오름.
 | 2 | 수익 모델 | 프리미엄 구독 (가방 2개 무료 → 스탠다드 $1.99/월 → 프로 $3.99/월) |
 | 2 | 구독 가격 | 스탠다드 $1.99/월(2,500원) 가방 5개, 프로 $3.99/월(3,900원) 가방 10개+무제한 챙길 것. 연간 -35% |
 | 2 | 결제 관리 | RevenueCat |
-| 3 | 플랫폼 | React Native + Expo (크로스플랫폼, 기존 경험) |
+| 3 | 플랫폼 | React Native + Expo — Android MVP 출시 → 추후 iOS |
 | 3 | 로그인 | Google + 카카오 + Apple |
 | 3 | 동기화 | 계정 기반 클라우드 동기화 |
 | 4 | 디자인 | 깔끔하고 심플 + 스티커 컨셉 포인트 |

@@ -12,6 +12,10 @@
     },
     "android": {
       "package": "com.surmiselab.amatda",
+      "permissions": [
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#e8674a",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -42,7 +46,8 @@
           "icon": "./assets/notification-icon.png",
           "color": "#e8674a"
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

@@ -6,64 +6,19 @@ import {
   ScrollView,
   Platform,
   Dimensions,
+  ActivityIndicator,
+  Modal,
+  TextInput,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
+import { supabase } from '@/lib/supabase';
+import { useAlert } from '@/store/alertStore';
+import type { PackWithTriggers, TriggerWithItems } from '@/types/db';
 
-type BagItem = { id: string; name: string; emoji: string };
 type TriggerTab = 'depart' | 'arrive';
-
-type MockBag = {
-  id: string;
-  name: string;
-  emoji: string;
-  active: boolean;
-  place: string;
-  radiusLabel: string;
-  departItems: BagItem[];
-  arriveItems: BagItem[];
-};
-
-const MOCK_BAGS: MockBag[] = [
-  {
-    id: '1',
-    name: '출근 가방',
-    emoji: '💼',
-    active: true,
-    place: '우리집',
-    radiusLabel: '200m',
-    departItems: [
-      { id: 'd1', name: '휴대폰', emoji: '📱' },
-      { id: 'd2', name: '지갑', emoji: '👛' },
-      { id: 'd3', name: '차 키', emoji: '🔑' },
-      { id: 'd4', name: '사원증', emoji: '🪪' },
-      { id: 'd5', name: '이어폰', emoji: '🎧' },
-      { id: 'd6', name: '우산', emoji: '☂️' },
-    ],
-    arriveItems: [
-      { id: 'a1', name: '우유', emoji: '🥛' },
-      { id: 'a2', name: '달걀', emoji: '🥚' },
-      { id: 'a3', name: '식빵', emoji: '🍞' },
-    ],
-  },
-  {
-    id: '2',
-    name: '헬스장',
-    emoji: '🏋️',
-    active: false,
-    place: '집 앞',
-    radiusLabel: '100m',
-    departItems: [
-      { id: 'd7', name: '운동복', emoji: '👕' },
-      { id: 'd8', name: '수건', emoji: '🧺' },
-      { id: 'd9', name: '이어폰', emoji: '🎧' },
-      { id: 'd10', name: '셰이커', emoji: '🥤' },
-    ],
-    arriveItems: [],
-  },
-];
 
 /* ---------- map constants ---------- */
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -72,29 +27,26 @@ const MAP_H = 184;
 const GEO_SIZE = 124;
 
 /* ---------- decorative map ---------- */
-function DecorativeMap({ place = '우리집', radius = '200m' }: { place?: string; radius?: string }) {
+function DecorativeMap({ place, radius }: { place?: string | null; radius: string }) {
   const geoLeft = (MAP_W - GEO_SIZE) / 2;
   const geoTop = (MAP_H - GEO_SIZE) / 2;
+  const placeLabel = place ?? '위치 미설정';
 
   return (
     <View style={mapSt.card}>
-      {/* Roads */}
       <View style={[mapSt.road, { left: 0, right: 0, top: MAP_H * 0.56, height: 13 }]} />
       <View style={[mapSt.road, { top: 0, bottom: 0, left: MAP_W * 0.30, width: 12 }]} />
       <View style={[mapSt.road, { top: MAP_H * 0.56, bottom: 0, left: MAP_W * 0.70, width: 8 }]} />
-      {/* Park */}
       <View style={{
         position: 'absolute', left: MAP_W * 0.06, top: MAP_H * 0.63,
         width: MAP_W * 0.20, height: MAP_H * 0.30,
         backgroundColor: 'rgba(79,157,122,0.18)', borderWidth: 1.5, borderColor: 'rgba(79,157,122,0.32)', borderRadius: 6,
       }} />
-      {/* Water */}
       <View style={{
         position: 'absolute', right: -4, top: MAP_H * 0.64,
         width: MAP_W * 0.24, height: MAP_H * 0.40,
         backgroundColor: 'rgba(95,150,200,0.16)', borderWidth: 1.5, borderColor: 'rgba(95,150,200,0.28)', borderTopLeftRadius: 40,
       }} />
-      {/* Building blocks */}
       {([
         [0.46, 0.08, 0.12, 0.12, '#ece8dd'],
         [0.60, 0.10, 0.09, 0.09, '#e7e2d6'],
@@ -111,34 +63,29 @@ function DecorativeMap({ place = '우리집', radius = '200m' }: { place?: strin
           backgroundColor: c,
         }]} />
       ))}
-      {/* Geofence circle */}
-      <View style={[mapSt.geo, { left: geoLeft, top: geoTop }]} />
-      {/* Current location dot */}
+      {place ? <View style={[mapSt.geo, { left: geoLeft, top: geoTop }]} /> : null}
       <View style={{
         position: 'absolute', left: MAP_W * 0.32, top: MAP_H * 0.70,
         width: 13, height: 13, borderRadius: 6.5,
         backgroundColor: '#5f96c8', borderWidth: 2, borderColor: '#fff',
       }} />
-      {/* Pin centered */}
       <View style={{ position: 'absolute', top: MAP_H / 2 - 22, left: 0, right: 0, alignItems: 'center' }}>
-        <Ionicons name="location" size={22} color={colors.accent} />
+        <Ionicons name="location" size={22} color={place ? colors.accent : colors.inkFaint} />
       </View>
-      {/* Place label sticker */}
       <View style={{ position: 'absolute', top: MAP_H / 2 + 5, left: 0, right: 0, alignItems: 'center' }}>
-        <View style={mapSt.placeSticker}>
-          <Text style={mapSt.placeStickerText}>{place}</Text>
+        <View style={[mapSt.placeSticker, !place && mapSt.placeStickerEmpty]}>
+          <Text style={[mapSt.placeStickerText, !place && mapSt.placeStickerTextEmpty]}>{placeLabel}</Text>
         </View>
       </View>
-      {/* Street label */}
       <View style={mapSt.streetLabel}>
         <Text style={mapSt.streetLabelText}>합정로</Text>
       </View>
-      {/* Radius pill */}
-      <View style={mapSt.radiusPill}>
-        <Ionicons name="location-outline" size={11} color={colors.inkSoft} />
-        <Text style={mapSt.radiusPillText}>반경 {radius}</Text>
-      </View>
-      {/* Locate button */}
+      {place && (
+        <View style={mapSt.radiusPill}>
+          <Ionicons name="location-outline" size={11} color={colors.inkSoft} />
+          <Text style={mapSt.radiusPillText}>반경 {radius}</Text>
+        </View>
+      )}
       <View style={mapSt.locateBtn}>
         <Ionicons name="locate-outline" size={18} color={colors.ink} />
       </View>
@@ -188,10 +135,17 @@ const mapSt = StyleSheet.create({
     ...radiusExact.chip,
     ...shadow.sticker,
   },
+  placeStickerEmpty: {
+    borderStyle: 'dashed',
+    borderColor: colors.lineStrong,
+  },
   placeStickerText: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
+  },
+  placeStickerTextEmpty: {
+    color: colors.inkFaint,
   },
   streetLabel: {
     position: 'absolute',
@@ -295,7 +249,7 @@ const segSt = StyleSheet.create({
   },
 });
 
-/* ---------- item chip with menu ---------- */
+/* ---------- item chip ---------- */
 function DetailItemChip({ name, emoji }: { name: string; emoji: string }) {
   return (
     <View style={chipSt.chip}>
@@ -392,14 +346,189 @@ const addSt = StyleSheet.create({
   },
 });
 
+/* ---------- rename modal ---------- */
+function RenameModal({
+  visible,
+  initialName,
+  initialEmoji,
+  onCancel,
+  onSave,
+}: {
+  visible: boolean;
+  initialName: string;
+  initialEmoji: string;
+  onCancel: () => void;
+  onSave: (name: string, emoji: string) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [emoji, setEmoji] = useState(initialEmoji);
+
+  const handleSave = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onSave(trimmed, emoji.trim() || initialEmoji);
+  };
+
+  return (
+    <Modal transparent animationType="fade" visible={visible} statusBarTranslucent>
+      <View style={renameSt.overlay}>
+        <View style={renameSt.card}>
+          <Text style={renameSt.title}>이름·이모지 변경</Text>
+          <View style={renameSt.row}>
+            <TextInput
+              style={renameSt.emojiInput}
+              value={emoji}
+              onChangeText={setEmoji}
+              maxLength={2}
+              placeholder="💼"
+              placeholderTextColor={colors.inkFaint}
+            />
+            <TextInput
+              style={renameSt.nameInput}
+              value={name}
+              onChangeText={setName}
+              placeholder="가방 이름"
+              placeholderTextColor={colors.inkFaint}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+            />
+          </View>
+          <View style={renameSt.btnRow}>
+            <Pressable style={[renameSt.btn, renameSt.btnCancel]} onPress={onCancel}>
+              <Text style={renameSt.btnCancelText}>취소</Text>
+            </Pressable>
+            <Pressable style={[renameSt.btn, renameSt.btnSave]} onPress={handleSave}>
+              <Text style={renameSt.btnSaveText}>저장</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const renameSt = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(44,42,38,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    ...radiusExact.card,
+    padding: 22,
+    gap: 16,
+    ...shadow.pop,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  emojiInput: {
+    width: 52,
+    height: 48,
+    backgroundColor: colors.surface2,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    ...radiusExact.field,
+    fontSize: 22,
+    textAlign: 'center',
+    color: colors.ink,
+  },
+  nameInput: {
+    flex: 1,
+    height: 48,
+    backgroundColor: colors.surface2,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    ...radiusExact.field,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  btn: {
+    flex: 1,
+    paddingVertical: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...radiusExact.btn,
+  },
+  btnCancel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+  },
+  btnSave: {
+    backgroundColor: colors.accent,
+    borderWidth: 1.5,
+    borderColor: colors.coral600,
+    ...shadow.btn,
+  },
+  btnCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.inkSoft,
+  },
+  btnSaveText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+});
+
 /* ---------- screen ---------- */
 export default function BagDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const bag = MOCK_BAGS.find((b) => b.id === id) ?? MOCK_BAGS[0];
+  const showAlert = useAlert();
+
+  const [pack, setPack] = useState<PackWithTriggers | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TriggerTab>('depart');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
 
-  const items = activeTab === 'depart' ? bag.departItems : bag.arriveItems;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const load = async () => {
+        setLoading(true);
+        const { data } = await supabase
+          .from('packs')
+          .select('*, triggers(*, items(*))')
+          .eq('id', id)
+          .single();
+        if (active && data) setPack(data as PackWithTriggers);
+        if (active) setLoading(false);
+      };
+      load();
+      return () => { active = false; };
+    }, [id])
+  );
+
+  const depTrigger = pack?.triggers.find((t) => t.type === 'departure') as TriggerWithItems | undefined;
+  const arrTrigger = pack?.triggers.find((t) => t.type === 'arrival') as TriggerWithItems | undefined;
+  const activeTrigger = activeTab === 'depart' ? depTrigger : arrTrigger;
+  const items = activeTrigger?.items ?? [];
+  const isActive = pack?.triggers.some((t) => t.is_active) ?? false;
+  const place = depTrigger?.label ?? null;
+  const radius = depTrigger?.radius_meters ? `${depTrigger.radius_meters}m` : '200m';
   const tabLabel = activeTab === 'depart' ? '떠날 때' : '도착할 때';
   const hintText =
     activeTab === 'depart'
@@ -407,6 +536,47 @@ export default function BagDetailScreen() {
       : '이 구역에 들어오면 "챙길 것" 알림';
 
   const menuTop = Platform.OS === 'web' ? 72 : 112;
+
+  const handleDelete = () => {
+    setMenuOpen(false);
+    showAlert({
+      title: '가방 삭제',
+      message: `"${pack?.name}" 가방을 삭제할까요? 되돌릴 수 없어요.`,
+      buttons: [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.from('packs').delete().eq('id', id);
+            router.back();
+          },
+        },
+      ],
+    });
+  };
+
+  const handleRenameSave = async (name: string, emoji: string) => {
+    setRenameOpen(false);
+    await supabase.from('packs').update({ name, emoji }).eq('id', id);
+    setPack((prev) => prev ? { ...prev, name, emoji } : prev);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (!pack) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.inkSoft }}>가방을 찾을 수 없어요.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -416,7 +586,7 @@ export default function BagDetailScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.ink} />
         </Pressable>
         <Text style={styles.appBarTitle} numberOfLines={1}>
-          {bag.name}
+          {pack.emoji} {pack.name}
         </Text>
         <View style={{ flex: 1 }} />
         <Pressable style={styles.iconBtn} onPress={() => setMenuOpen(true)}>
@@ -431,7 +601,7 @@ export default function BagDetailScreen() {
       >
         {/* Map card */}
         <Pressable onPress={() => router.push('/(tabs)/bags/location')}>
-          <DecorativeMap place={bag.place} radius={bag.radiusLabel} />
+          <DecorativeMap place={place} radius={radius} />
         </Pressable>
 
         {/* Content */}
@@ -439,13 +609,16 @@ export default function BagDetailScreen() {
           {/* Info row */}
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
-              <Ionicons name="location-outline" size={16} color={colors.accent} />
+              <Ionicons name="location-outline" size={16} color={place ? colors.accent : colors.inkFaint} />
               <Text style={styles.infoText}>
-                {bag.place} · 반경{' '}
-                <Text style={styles.infoAccent}>{bag.radiusLabel}</Text>
+                {place ? (
+                  <>{place} · 반경 <Text style={styles.infoAccent}>{radius}</Text></>
+                ) : (
+                  '위치 미설정'
+                )}
               </Text>
             </View>
-            {bag.active ? (
+            {isActive ? (
               <View style={styles.livePill}>
                 <View style={styles.liveDot} />
                 <Text style={styles.livePillText}>켜짐</Text>
@@ -481,7 +654,7 @@ export default function BagDetailScreen() {
           {/* Chips */}
           <View style={styles.chipsWrap}>
             {items.map((item) => (
-              <DetailItemChip key={item.id} name={item.name} emoji={item.emoji} />
+              <DetailItemChip key={item.id} name={item.name} emoji={item.emoji ?? '📦'} />
             ))}
             <AddChip />
           </View>
@@ -493,18 +666,30 @@ export default function BagDetailScreen() {
         <>
           <Pressable style={styles.scrim} onPress={() => setMenuOpen(false)} />
           <View style={[styles.menuCard, { top: menuTop }]}>
-            <Pressable style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => { setMenuOpen(false); setRenameOpen(true); }}
+            >
               <Ionicons name="pencil-outline" size={17} color={colors.ink} />
               <Text style={styles.menuItemText}>이름·이모지 변경</Text>
             </Pressable>
             <View style={styles.menuDivider} />
-            <Pressable style={styles.menuItem}>
+            <Pressable style={styles.menuItem} onPress={handleDelete}>
               <Ionicons name="trash-outline" size={17} color={colors.danger} />
               <Text style={[styles.menuItemText, { color: colors.danger }]}>가방 삭제</Text>
             </Pressable>
           </View>
         </>
       )}
+
+      {/* Rename modal */}
+      <RenameModal
+        visible={renameOpen}
+        initialName={pack.name}
+        initialEmoji={pack.emoji ?? '💼'}
+        onCancel={() => setRenameOpen(false)}
+        onSave={handleRenameSave}
+      />
     </View>
   );
 }

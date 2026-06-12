@@ -7,11 +7,14 @@ import {
   Platform,
   Dimensions,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
+import { supabase } from '@/lib/supabase';
 
 type TriggerTab = 'depart' | 'arrive';
 type BagItem = { id: string; name: string; emoji: string };
@@ -541,6 +544,7 @@ export default function BagCreateScreen() {
   const [departItems, setDepartItems] = useState<BagItem[]>([]);
   const [arriveItems, setArriveItems] = useState<BagItem[]>([]);
   const [showPicker, setShowPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const suggestions = getEmojiSuggestions(name);
   const autoEmoji = suggestions[0] ?? '💼';
@@ -554,6 +558,70 @@ export default function BagCreateScreen() {
   const handleAdd = (items: BagItem[]) => {
     if (activeTab === 'depart') setDepartItems(items);
     else setArriveItems(items);
+  };
+
+  const handleCreate = async () => {
+    if (!canCreate || saving) return;
+    setSaving(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+
+    const finalEmoji = emoji || autoEmoji;
+
+    // 1. pack 생성
+    const { data: pack, error: packErr } = await supabase
+      .from('packs')
+      .insert({ user_id: user.id, name: name.trim(), emoji: finalEmoji, sort_order: 0 })
+      .select()
+      .single();
+
+    if (packErr || !pack) {
+      Alert.alert('오류', packErr?.message ?? '가방 생성 실패');
+      setSaving(false);
+      return;
+    }
+
+    // 2. departure trigger 생성
+    const { data: depTrigger } = await supabase
+      .from('triggers')
+      .insert({ pack_id: pack.id, type: 'departure', radius_meters: 200, is_active: false })
+      .select()
+      .single();
+
+    // 3. arrival trigger 생성
+    const { data: arrTrigger } = await supabase
+      .from('triggers')
+      .insert({ pack_id: pack.id, type: 'arrival', radius_meters: 200, is_active: false })
+      .select()
+      .single();
+
+    // 4. departure items 저장
+    if (depTrigger && departItems.length > 0) {
+      await supabase.from('items').insert(
+        departItems.map((it, i) => ({
+          trigger_id: depTrigger.id,
+          name: it.name,
+          emoji: it.emoji,
+          sort_order: i,
+        }))
+      );
+    }
+
+    // 5. arrival items 저장
+    if (arrTrigger && arriveItems.length > 0) {
+      await supabase.from('items').insert(
+        arriveItems.map((it, i) => ({
+          trigger_id: arrTrigger.id,
+          name: it.name,
+          emoji: it.emoji,
+          sort_order: i,
+        }))
+      );
+    }
+
+    setSaving(false);
+    router.replace(`/(tabs)/bags/${pack.id}`);
   };
 
   return (
@@ -645,8 +713,15 @@ export default function BagCreateScreen() {
 
       {/* Footer CTA */}
       <View style={styles.footer}>
-        <Pressable style={[styles.cta, !canCreate && styles.ctaDisabled]}>
-          <Text style={[styles.ctaText, !canCreate && styles.ctaTextDisabled]}>가방 만들기</Text>
+        <Pressable
+          style={[styles.cta, (!canCreate || saving) && styles.ctaDisabled]}
+          onPress={handleCreate}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={[styles.ctaText, !canCreate && styles.ctaTextDisabled]}>가방 만들기</Text>
+          )}
         </Pressable>
       </View>
 

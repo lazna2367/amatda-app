@@ -1,7 +1,12 @@
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import { supabase } from '@/lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 /* ---------- app icon ---------- */
 function AppIcon({ size = 92 }: { size?: number }) {
@@ -87,12 +92,42 @@ const btnSt = StyleSheet.create({
   },
 });
 
+/* ---------- oauth helpers ---------- */
+const redirectTo = makeRedirectUri({ scheme: 'amatda', path: 'auth/callback' });
+
+async function oauthLogin(provider: 'google' | 'kakao') {
+  const isWeb = Platform.OS === 'web';
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: isWeb ? `${window.location.origin}/auth/callback` : redirectTo,
+      skipBrowserRedirect: !isWeb,
+      ...(provider === 'kakao' && { scopes: 'profile_nickname profile_image' }),
+    },
+  });
+
+  if (error || !data.url) {
+    Alert.alert('로그인 실패', error?.message ?? '다시 시도해 주세요.');
+    return;
+  }
+
+  if (isWeb) {
+    // 웹: 브라우저 리디렉트 방식 (팝업 불필요)
+    window.location.href = data.url;
+    return;
+  }
+
+  // 네이티브: WebBrowser 팝업 방식
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type === 'success') {
+    const { error: exchError } = await supabase.auth.exchangeCodeForSession(result.url);
+    if (exchError) Alert.alert('로그인 실패', exchError.message);
+  }
+}
+
 /* ---------- main screen ---------- */
 export default function LoginScreen() {
-  const handleLogin = () => {
-    router.replace('/(auth)/perm-location');
-  };
-
   return (
     <View style={styles.screen}>
       {/* Brand area */}
@@ -111,7 +146,7 @@ export default function LoginScreen() {
           textColor="#191600"
           icon={<Text style={{ fontSize: 17 }}>💬</Text>}
           label="카카오로 시작"
-          onPress={handleLogin}
+          onPress={() => oauthLogin('kakao')}
         />
         <SocialBtn
           bg="#fff"
@@ -119,14 +154,14 @@ export default function LoginScreen() {
           textColor={colors.ink}
           icon={<Ionicons name="logo-google" size={18} color="#4285F4" />}
           label="Google로 시작"
-          onPress={handleLogin}
+          onPress={() => oauthLogin('google')}
         />
         <SocialBtn
           bg="#1d1b18"
           textColor="#fff"
           icon={<Ionicons name="logo-apple" size={19} color="#fff" />}
           label="Apple로 시작"
-          onPress={handleLogin}
+          onPress={() => router.replace('/(auth)/perm-location')}
         />
         <Text style={styles.terms}>
           계속하면{' '}

@@ -1,8 +1,11 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
 import { BagCard, type BagItem } from '@/components/BagCard';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
+import { supabase } from '@/lib/supabase';
+import { syncGeofencing } from '@/lib/geofencing';
+import type { PackWithTriggers } from '@/types/db';
 
 type Bag = {
   id: string;
@@ -15,36 +18,72 @@ type Bag = {
   active: boolean;
 };
 
-// 임시 목 데이터 — Supabase 연동 전
-const MOCK_BAGS: Bag[] = [
-  {
-    id: '1',
-    name: '출근 가방',
-    emoji: '💼',
-    triggerLabel: '떠날 때',
-    place: '집 · 합정동',
-    lastChecked: '오늘 08:12 챙김',
-    active: true,
-    items: [
-      { id: '1', name: '휴대폰', emoji: '📱' },
-      { id: '2', name: '지갑', emoji: '👛' },
-      { id: '3', name: '차 키', emoji: '🔑' },
-      { id: '4', name: '사원증', emoji: '🪪' },
-      { id: '5', name: '이어폰', emoji: '🎧' },
-      { id: '6', name: '우산', emoji: '☂️' },
-    ],
-  },
-];
-
 const FREE_PACK_LIMIT = 2;
 
-export default function BagListScreen() {
-  const [bags, setBags] = useState<Bag[]>(MOCK_BAGS);
-  const activeCount = bags.filter((b) => b.active).length;
+function packToBag(pack: PackWithTriggers): Bag {
+  const depTrigger = pack.triggers.find((t) => t.type === 'departure');
+  const items: BagItem[] = (depTrigger?.items ?? []).map((it) => ({
+    id: it.id,
+    name: it.name,
+    emoji: it.emoji ?? '📦',
+  }));
+  const isActive = pack.triggers.some((t) => t.is_active);
+  const place = depTrigger?.label ?? undefined;
+  const triggerLabel = depTrigger
+    ? place
+      ? '떠날 때'
+      : '위치 미설정'
+    : '위치 미설정';
 
-  const toggleActive = (id: string, value: boolean) => {
-    setBags((prev) => prev.map((b) => (b.id === id ? { ...b, active: value } : b)));
+  return {
+    id: pack.id,
+    name: pack.name,
+    emoji: pack.emoji ?? '💼',
+    items,
+    triggerLabel,
+    place,
+    active: isActive,
   };
+}
+
+export default function BagListScreen() {
+  const [bags, setBags] = useState<Bag[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      const load = async () => {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+
+        const { data } = await supabase
+          .from('packs')
+          .select('*, triggers(*, items(*))')
+          .eq('user_id', user.id)
+          .order('sort_order', { ascending: true });
+
+        if (active && data) {
+          setBags((data as PackWithTriggers[]).map(packToBag));
+        }
+        if (active) setLoading(false);
+      };
+
+      load();
+      return () => { active = false; };
+    }, [])
+  );
+
+  const toggleActive = async (id: string, value: boolean) => {
+    setBags((prev) => prev.map((b) => (b.id === id ? { ...b, active: value } : b)));
+    await supabase.from('triggers').update({ is_active: value }).eq('pack_id', id);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await syncGeofencing(user.id);
+  };
+  const activeCount = bags.filter((b) => b.active).length;
 
   const handleAddBag = () => {
     if (bags.length >= FREE_PACK_LIMIT) {
@@ -53,6 +92,14 @@ export default function BagListScreen() {
     }
     router.push('/(tabs)/bags/new');
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

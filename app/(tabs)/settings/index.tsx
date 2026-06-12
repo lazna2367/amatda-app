@@ -3,6 +3,8 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-n
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radiusExact, shadow, spacing } from '@/theme';
+import { supabase } from '@/lib/supabase';
+import { useAlert } from '@/store/alertStore';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -180,6 +182,8 @@ const togSt = StyleSheet.create({
 
 /* ---------- main screen ---------- */
 export default function SettingsScreen() {
+  const showAlert = useAlert();
+
   return (
     <View style={styles.screen}>
       {/* AppBar */}
@@ -240,7 +244,24 @@ export default function SettingsScreen() {
           <Hr />
           <SettRow icon="document-outline" label="이용약관" />
           <Hr />
-          <SettRow icon="log-out-outline" label="로그아웃" />
+          <SettRow
+            icon="log-out-outline"
+            label="로그아웃"
+            onPress={() =>
+              showAlert({
+                title: '로그아웃',
+                message: '로그아웃 할까요?',
+                buttons: [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '로그아웃',
+                    style: 'destructive',
+                    onPress: async () => { await supabase.auth.signOut(); },
+                  },
+                ],
+              })
+            }
+          />
           <Hr />
           <SettRow icon="trash-outline" label="회원 탈퇴" danger />
         </Section>

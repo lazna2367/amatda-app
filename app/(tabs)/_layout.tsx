@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
@@ -39,7 +39,7 @@ export default function TabsLayout() {
           tabBarLabelPosition: 'below-icon',
           tabBarShowLabel: true,
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon name="bag-outline" activeName="bag" focused={focused} color={color} />
+            <TabIcon name="bag-outline" activeName="bag" focused={focused} color={color as string} />
           ),
         }}
       />
@@ -54,7 +54,7 @@ export default function TabsLayout() {
               name="notifications-outline"
               activeName="notifications"
               focused={focused}
-              color={color}
+              color={color as string}
             />
           ),
         }}
@@ -70,7 +70,7 @@ export default function TabsLayout() {
               name="settings-outline"
               activeName="settings"
               focused={focused}
-              color={color}
+              color={color as string}
             />
           ),
         }}
