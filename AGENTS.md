@@ -240,7 +240,7 @@ shadow.pop     // 18px Y offset, 큰 소프트 그림자, elevation 12
 ```
 
 ### 디자인 참고 파일
-`.claude/handoff/project/` 폴더의 hifi-*.jsx 파일들이 디자인 레퍼런스.
+`.claude/worktrees/handoff/project/` 폴더의 hifi-*.jsx 파일들이 디자인 레퍼런스.
 새 화면 구현 전에 해당 파일을 먼저 읽을 것.
 
 ---

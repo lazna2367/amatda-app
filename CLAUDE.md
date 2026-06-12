@@ -209,7 +209,7 @@ checked_at
 
 ## Handoff Files
 
-개발 시 디자인 참고 파일 위치: `.claude/handoff/project/`
+개발 시 디자인 참고 파일 위치: `.claude/worktrees/handoff/project/`
 
 | 파일 | 내용 |
 |---|---|
